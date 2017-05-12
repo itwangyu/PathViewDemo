@@ -20,9 +20,9 @@ public class PathView extends View {
     private Context context;
     private Paint paint;
     private int width,height;
-    private float circleAniValue,successAniValue;
+    private float circleAniValue,successAniValue,successAniValue2;
     private Path circlepath;
-    private Path successPath;
+//    private Path successPath;
     private PathMeasure pathMeasure;
     private Path mPath;//截取到的真正用来画图的path
 
@@ -56,6 +56,7 @@ public class PathView extends View {
             @Override
             public void onAnimationUpdate(ValueAnimator animation) {
                 circleAniValue = (float) animation.getAnimatedValue();
+//                Log.i("tag", "0:" + circleAniValue);
                 invalidate();
             }
         });
@@ -64,18 +65,31 @@ public class PathView extends View {
             @Override
             public void onAnimationUpdate(ValueAnimator animation) {
                 successAniValue = (float) animation.getAnimatedValue();
+//                Log.i("tag", "1:" + successAniValue);
+                invalidate();
+            }
+        });
+
+        final ValueAnimator succrssAnimator2 = ValueAnimator.ofFloat(0, 1);
+        succrssAnimator2.addUpdateListener(new ValueAnimator.AnimatorUpdateListener() {
+            @Override
+            public void onAnimationUpdate(ValueAnimator animation) {
+                successAniValue2 = (float) animation.getAnimatedValue();
+//                Log.i("tag","2:"+successAniValue2);
                 invalidate();
             }
         });
 
         circlepath = new Path();
-        successPath = new Path();
+//        successPath = new Path();
         mPath = new Path();
         pathMeasure = new PathMeasure();
 
         AnimatorSet animatorSet = new AnimatorSet();
-        animatorSet.setDuration(2000);
-        animatorSet.play(cirvleAnimator).before(succrssAnimator);
+        animatorSet.setDuration(1000);
+        animatorSet.play(cirvleAnimator);
+        animatorSet.play(succrssAnimator).after(cirvleAnimator);
+        animatorSet.play(succrssAnimator2).after(succrssAnimator);
         animatorSet.start();
     }
 
@@ -103,20 +117,28 @@ public class PathView extends View {
     protected void onDraw(Canvas canvas) {
         super.onDraw(canvas);
         //构建圆形path
-        circlepath.addCircle(width / 2, height / 2, width / 2 - 10, Path.Direction.CW);
+        canvas.translate(width/2,height/2);
+        canvas.rotate(90,0,0);
+        circlepath.reset();
+//        circlepath.addArc(new RectF(10,10,width-10,height-10),90,360);
+        circlepath.addCircle(0,0, width / 2 - 10, Path.Direction.CW);
+
+        circlepath.lineTo(0,0);
+
+        circlepath.addCircle(-width/6,0 , width / 6, Path.Direction.CW);
+
         pathMeasure.setPath(circlepath,false);
         //截取片段
         pathMeasure.getSegment(0, circleAniValue * pathMeasure.getLength(), mPath, true);
 
         if (circleAniValue >= 1f) {
-            //话对勾
-            successPath.moveTo(width / 8 * 2, width / 2);
-            successPath.lineTo(width / 2, width / 3 * 2);
-            successPath.lineTo(width / 4 * 3, width / 5 * 2);
-            pathMeasure.setPath(successPath,false);
+            pathMeasure.nextContour();
             pathMeasure.getSegment(0, successAniValue * pathMeasure.getLength(), mPath, true);
         }
-
+        if (successAniValue >= 1f) {
+            pathMeasure.nextContour();
+            pathMeasure.getSegment(0, successAniValue2 * pathMeasure.getLength(), mPath, true);
+        }
 
         canvas.drawPath(mPath,paint);
     }
